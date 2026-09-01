@@ -447,6 +447,133 @@ textarea#message-input:focus {
   }
 }
 
+/* Feedback Controls */
+.answer-feedback {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(241, 245, 249, 0.7);
+  border: 1px solid var(--line);
+}
+
+.feedback-prompt {
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.feedback-controls,
+.feedback-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.feedback-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.feedback-button:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+
+.feedback-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.feedback-up {
+  color: #15803d;
+}
+
+.feedback-down {
+  color: #b91c1c;
+}
+
+.feedback-submit {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.feedback-submit:hover:not(:disabled) {
+  background: var(--primary-darker);
+  color: #ffffff;
+}
+
+.feedback-form {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.feedback-form[hidden] {
+  display: none;
+}
+
+.feedback-form label {
+  display: block;
+  margin: 6px 0 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.feedback-form textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: #ffffff;
+  resize: vertical;
+}
+
+.feedback-form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.feedback-warning {
+  margin: 5px 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.feedback-status {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.feedback-status.feedback-success {
+  color: #15803d;
+}
+
+.feedback-status.feedback-error {
+  color: #b91c1c;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *:before, *:after {
     transition: none !important;

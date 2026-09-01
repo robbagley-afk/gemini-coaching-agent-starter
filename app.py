@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Dual-Engine AI Coaching Agent Starter Template
-----------------------------------------------
+Dual-Engine AI Coaching Agent Starter Template with Feedback Store
+------------------------------------------------------------------
 A lightweight, zero-dependency Python backend for a multi-step generative AI coach.
 
 Inference Strategy:
@@ -9,19 +9,18 @@ Inference Strategy:
 2. Fallback: Google Gemini (gemini-2.5-flash) if LM Studio is unreachable
 3. Offline:  Safe structured coaching guidance if both are unavailable
 
-Features:
-- Pure Python standard library (no pip install required)
-- Default rate limit: 50 requests/minute per IP
-- Built-in Privacy / PII filters (blocks SSNs, credit cards, passwords)
-- Multi-step workflow context routing
-- Automatic seamless fallback
+Feedback Mechanism:
+- Local SQLite database (feedback.db) storing thumbs up / thumbs down ratings
+- Structured suggestion capture with built-in PII privacy guardrails
 """
 
 import json
 import os
 import re
+import sqlite3
 import ssl
 import time
+import uuid
 from collections import defaultdict
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -59,9 +58,45 @@ HOST = os.environ.get("HOST", "0.0.0.0")
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MIN", "50"))
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+DB_PATH = Path(__file__).resolve().parent / "feedback.db"
 
 # ==============================================================================
-# 2. COACH SYSTEM PROMPT & PERSONA
+# 2. LOCAL FEEDBACK DATABASE (SQLITE)
+# ==============================================================================
+
+def init_db():
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    created_at TEXT NOT NULL,
+                    response_id TEXT NOT NULL,
+                    mode TEXT,
+                    rating TEXT NOT NULL,
+                    question TEXT,
+                    answer TEXT,
+                    comment TEXT,
+                    client_ip TEXT
+                )
+            """)
+            conn.commit()
+    except Exception as e:
+        print(f"[DB Init Error] {e}")
+
+init_db()
+
+def save_feedback(response_id: str, rating: str, comment: str = "", question: str = "", answer: str = "", mode: str = "", client_ip: str = ""):
+    now = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("""
+            INSERT INTO feedback (created_at, response_id, mode, rating, question, answer, comment, client_ip)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (now, response_id, mode, rating, question, answer, comment, client_ip))
+        conn.commit()
+
+# ==============================================================================
+# 3. COACH SYSTEM PROMPT & PERSONA
 # ==============================================================================
 # Customize this prompt for your agent's specific focus and purpose!
 
@@ -76,7 +111,6 @@ Core Guidelines:
 5. If the user asks for help brainstorming, give 2-3 distinct, realistic ideas.
 """
 
-# Contextual instructions prepended based on which step the user is on
 MODE_CONTEXTS = {
     "step1": "Mode: Step 1 (Discovery & Research). Help the user explore ideas, analyze key requirements, and clarify their target direction.",
     "step2": "Mode: Step 2 (Drafting & Core Message). Guide the user in building a compelling, clear message or draft. Highlight proof points.",
@@ -85,7 +119,7 @@ MODE_CONTEXTS = {
 }
 
 # ==============================================================================
-# 3. PRIVACY FILTER & GUARDRAILS
+# 4. PRIVACY FILTER & GUARDRAILS
 # ==============================================================================
 
 PII_PATTERNS = [
@@ -105,7 +139,7 @@ def check_privacy(text: str) -> str | None:
     return None
 
 # ==============================================================================
-# 4. SLIDING-WINDOW RATE LIMITER (DEFAULT: 50 REQ/MIN)
+# 5. SLIDING-WINDOW RATE LIMITER (DEFAULT: 50 REQ/MIN)
 # ==============================================================================
 
 class SlidingWindowRateLimiter:
@@ -116,7 +150,6 @@ class SlidingWindowRateLimiter:
     def is_allowed(self, client_ip: str) -> bool:
         now = time.time()
         window_start = now - 60.0
-        # Prune older timestamps
         self.requests[client_ip] = [t for t in self.requests[client_ip] if t > window_start]
         if len(self.requests[client_ip]) >= self.limit:
             return False
@@ -126,7 +159,7 @@ class SlidingWindowRateLimiter:
 RATE_LIMITER = SlidingWindowRateLimiter(limit_per_minute=RATE_LIMIT)
 
 # ==============================================================================
-# 5. INFERENCE ENGINES (PRIMARY: QWEN -> FALLBACK: GEMINI -> OFFLINE)
+# 6. INFERENCE ENGINES (PRIMARY: QWEN -> FALLBACK: GEMINI -> OFFLINE)
 # ==============================================================================
 
 def fallback_reply(message: str, mode: str) -> str:
@@ -253,7 +286,7 @@ def ask_coach(message: str, mode: str, history: list[dict[str, str]]) -> tuple[s
 
 
 # ==============================================================================
-# 6. HTTP REQUEST HANDLER
+# 7. HTTP REQUEST HANDLER
 # ==============================================================================
 
 class CoachHandler(SimpleHTTPRequestHandler):
@@ -286,6 +319,47 @@ class CoachHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
+        # ----------------------------------------------------------------------
+        # Feedback Submission Endpoint
+        # ----------------------------------------------------------------------
+        if self.path == "/api/feedback":
+            try:
+                content_length = int(self.headers.get("Content-Length", "0"))
+                raw_body = self.rfile.read(content_length).decode("utf-8")
+                data = json.loads(raw_body)
+            except Exception:
+                self._json({"error": "Invalid JSON payload."}, HTTPStatus.BAD_REQUEST)
+                return
+
+            response_id = str(data.get("response_id", "")).strip()
+            rating = str(data.get("rating", "")).strip().lower()
+            comment = str(data.get("comment", "")).strip()
+            question = str(data.get("question", "")).strip()
+            answer = str(data.get("answer", "")).strip()
+            mode = str(data.get("mode", "")).strip()
+
+            if rating not in ("up", "down"):
+                self._json({"error": "Rating must be 'up' or 'down'."}, HTTPStatus.BAD_REQUEST)
+                return
+
+            if comment:
+                warning = check_privacy(comment)
+                if warning:
+                    self._json({"error": warning}, HTTPStatus.BAD_REQUEST)
+                    return
+
+            client_ip = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[0].strip()
+            try:
+                save_feedback(response_id, rating, comment, question, answer, mode, client_ip)
+                self._json({"status": "ok", "message": "Feedback saved."})
+            except Exception as e:
+                print(f"[Feedback Save Error] {e}")
+                self._json({"error": "Failed to save feedback."}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            return
+
+        # ----------------------------------------------------------------------
+        # Chat Generation Endpoint
+        # ----------------------------------------------------------------------
         if self.path != "/api/chat":
             self.send_error(HTTPStatus.NOT_FOUND)
             return
@@ -324,11 +398,17 @@ class CoachHandler(SimpleHTTPRequestHandler):
 
         # 4. Generate Coach Response via Dual-Engine Coordinator
         reply, is_live, engine = ask_coach(message, mode, history)
-        self._json({"reply": reply, "live": is_live, "engine": engine})
+        response_id = f"resp-{uuid.uuid4().hex[:12]}"
+        self._json({
+            "reply": reply,
+            "live": is_live,
+            "engine": engine,
+            "response_id": response_id
+        })
 
 
 # ==============================================================================
-# 7. SERVER ENTRYPOINT
+# 8. SERVER ENTRYPOINT
 # ==============================================================================
 
 def main():
@@ -340,6 +420,7 @@ def main():
         print(f"   Primary Endpoint: {LM_STUDIO_URL}")
         print(f"   Fallback Engine:  {'Google Gemini (' + GEMINI_MODEL + ')' if GEMINI_API_KEY else 'Offline Fallback (Set GEMINI_API_KEY to enable Gemini)'}")
         print(f"   Rate Limit:       {RATE_LIMIT} req/min per IP")
+        print(f"   Feedback Store:   SQLite ({DB_PATH.name})")
         print("================================================================")
         print("Press Ctrl+C to stop.")
         try:

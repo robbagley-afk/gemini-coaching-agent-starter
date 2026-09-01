@@ -1,7 +1,8 @@
 /**
- * Gemini Coaching Agent - Frontend Logic
- * ---------------------------------------
- * Configure your 4 step modes, opening greetings, and starter prompts below!
+ * Dual-Engine AI Coaching Agent - Frontend Logic
+ * -----------------------------------------------
+ * Handles step modes, multi-turn chat, prompt chips,
+ * and thumbs up / thumbs down feedback controls.
  */
 
 const MODES = {
@@ -41,6 +42,7 @@ const MODES = {
 
 let currentMode = 'step1';
 let chatHistory = [];
+let lastUserMessage = '';
 
 // DOM Elements
 const messagesEl = document.querySelector('#messages');
@@ -52,9 +54,142 @@ const statusEl = document.querySelector('#service-status');
 const newChatBtn = document.querySelector('#new-chat');
 
 /**
+ * Creates a helper button for feedback actions
+ */
+function createFeedbackButton(label, className) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = `feedback-button ${className}`;
+  btn.textContent = label;
+  return btn;
+}
+
+/**
+ * Attaches thumbs up / thumbs down feedback controls to an AI response
+ */
+function addFeedbackControls(messageArticle, responseId, questionText, answerText) {
+  if (!responseId) return;
+
+  const region = document.createElement('div');
+  region.className = 'answer-feedback';
+  region.setAttribute('aria-label', 'Response feedback');
+
+  const prompt = document.createElement('p');
+  prompt.className = 'feedback-prompt';
+  prompt.textContent = 'Was this response helpful?';
+
+  const controls = document.createElement('div');
+  controls.className = 'feedback-controls';
+
+  const upButton = createFeedbackButton('👍 Helpful', 'feedback-up');
+  const downButton = createFeedbackButton('👎 Suggested Improvement', 'feedback-down');
+  controls.append(upButton, downButton);
+
+  const form = document.createElement('form');
+  form.className = 'feedback-form';
+  form.hidden = true;
+
+  const commentLabel = document.createElement('label');
+  commentLabel.textContent = 'How can this response be improved?';
+
+  const commentInput = document.createElement('textarea');
+  commentInput.rows = 3;
+  commentInput.placeholder = 'Explain what was missing, incorrect, or how to phrase it better...';
+  commentInput.required = true;
+
+  const warning = document.createElement('p');
+  warning.className = 'feedback-warning';
+  warning.textContent = '🔒 Keep personal or identifying information out of feedback.';
+
+  const formActions = document.createElement('div');
+  formActions.className = 'feedback-form-actions';
+  const submitButton = createFeedbackButton('Submit Feedback', 'feedback-submit');
+  submitButton.type = 'submit';
+  const cancelButton = createFeedbackButton('Cancel', 'feedback-cancel');
+  formActions.append(submitButton, cancelButton);
+
+  form.append(commentLabel, commentInput, warning, formActions);
+
+  const status = document.createElement('p');
+  status.className = 'feedback-status';
+
+  region.append(prompt, controls, form, status);
+  messageArticle.appendChild(region);
+
+  let submitted = false;
+  const setDisabled = (val) => {
+    upButton.disabled = val;
+    downButton.disabled = val;
+    submitButton.disabled = val;
+    cancelButton.disabled = val;
+    commentInput.disabled = val;
+  };
+
+  const submitFeedback = async (payload) => {
+    setDisabled(true);
+    status.textContent = 'Saving feedback…';
+    try {
+      const resp = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          response_id: responseId,
+          mode: currentMode,
+          question: questionText,
+          answer: answerText,
+          ...payload
+        })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.error || 'Failed to save feedback.');
+      }
+      submitted = true;
+      controls.hidden = true;
+      form.hidden = true;
+      prompt.hidden = true;
+      status.className = 'feedback-status feedback-success';
+      status.textContent = payload.rating === 'up'
+        ? '✓ Thank you! Marked as helpful.'
+        : '✓ Thank you! Your suggestion was saved.';
+    } catch (err) {
+      status.className = 'feedback-status feedback-error';
+      status.textContent = err.message || 'Feedback could not be saved.';
+      setDisabled(false);
+    }
+  };
+
+  upButton.addEventListener('click', () => {
+    if (!submitted) submitFeedback({ rating: 'up' });
+  });
+
+  downButton.addEventListener('click', () => {
+    if (submitted) return;
+    form.hidden = false;
+    status.textContent = '';
+    commentInput.focus();
+  });
+
+  cancelButton.addEventListener('click', () => {
+    form.hidden = true;
+    status.textContent = '';
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!submitted && commentInput.value.trim()) {
+      submitFeedback({
+        rating: 'down',
+        comment: commentInput.value.trim()
+      });
+    }
+  });
+}
+
+/**
  * Appends a message bubble to the transcript and smoothly scrolls to it
  */
-function addMessage(role, text) {
+function addMessage(role, text, responseId = null, questionText = '') {
   const item = document.createElement('article');
   item.className = `message ${role}`;
   item.innerHTML = `<small>${role === 'assistant' ? 'AI Coach' : 'You'}</small>`;
@@ -62,6 +197,12 @@ function addMessage(role, text) {
   const content = document.createElement('div');
   content.textContent = text;
   item.appendChild(content);
+
+  // Attach feedback controls if this is a live AI reply
+  if (role === 'assistant' && responseId) {
+    addFeedbackControls(item, responseId, questionText, text);
+  }
+
   messagesEl.appendChild(item);
 
   // Smooth scroll
@@ -91,6 +232,7 @@ function setMode(modeKey) {
   // Reset conversation for new step
   messagesEl.innerHTML = '';
   chatHistory = [];
+  lastUserMessage = '';
 
   // Post coach opener
   addMessage('assistant', MODES[currentMode].opener);
@@ -114,6 +256,7 @@ function setMode(modeKey) {
  * Sends a message to the backend and renders the response
  */
 async function submitMessage(message) {
+  lastUserMessage = message;
   addMessage('user', message);
   chatHistory.push({ role: 'user', content: message });
   statusEl.textContent = 'Thinking…';
@@ -134,9 +277,14 @@ async function submitMessage(message) {
       throw new Error(data.error || 'Something went wrong.');
     }
 
-    addMessage('assistant', data.reply);
+    addMessage('assistant', data.reply, data.response_id, lastUserMessage);
     chatHistory.push({ role: 'assistant', content: data.reply });
-    statusEl.textContent = data.live ? 'AI Live' : 'Helpful fallback';
+
+    if (data.live) {
+      statusEl.textContent = data.engine === 'gemini' ? 'Gemini Live' : 'Qwen Live';
+    } else {
+      statusEl.textContent = 'Helpful fallback';
+    }
   } catch (err) {
     addMessage('assistant', err.message || 'I encountered an error. Please try again.');
     statusEl.textContent = 'Try again';
