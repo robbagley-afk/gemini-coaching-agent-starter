@@ -1,37 +1,42 @@
-# 🚀 Gemini Coaching Agent Starter Template
+# 🚀 AI Coaching Agent Starter Template (LM Studio Qwen Powered)
 
-A clean, production-ready, mobile-first generative AI coaching application powered by **Google Gemini** (`gemini-2.5-flash`).
+A clean, production-ready, mobile-first generative AI coaching application powered by **Qwen** (`qwen3-vl-30b-a3b-instruct-mlx`) running on **LM Studio** via a dedicated **public Tailscale tunnel**.
 
-Built with zero external Python dependencies (pure Python standard library), built-in privacy guardrails (PII blocking), sliding-window rate limiting, and an interactive 4-step workflow.
+**Zero cloud API keys required!** Any application cloned or built from this starter template automatically connects to the shared Mac Studio local LLM inference stack.
 
 ---
 
-## ⚡ Quickstart (Run in 2 Minutes)
+## ⚡ Quickstart (Run in 1 Minute)
 
-### 1. Clone or Copy This Repository
+### 1. Clone This Repository
 ```bash
-git clone <your-repo-url>
-cd gemini-coaching-agent-starter
+git clone https://github.com/robbagley-afk/gemini-coaching-agent-starter.git my-coach-app
+cd my-coach-app
 ```
 
-### 2. Configure Your Gemini API Key
-Create a `.env` file (or set the `GEMINI_API_KEY` environment variable):
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` and paste your Google Gemini API key:
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-*(Get a free API key at [Google AI Studio](https://aistudio.google.com/)).*
-
-### 3. Run the App
+### 2. Run the App
 ```bash
 python3 app.py
 ```
 Open **[http://localhost:5050](http://localhost:5050)** in your browser!
+
+*(The app immediately connects to `https://mac-studio-2.tail299fc7.ts.net:8443/v1` for live Qwen inference at zero cost).*
+
+---
+
+## 🌐 Public Tailscale Inference Tunnel
+
+The app connects to the shared LM Studio OpenAI-compatible endpoint:
+
+- **Public Tailscale Tunnel Endpoint**: `https://mac-studio-2.tail299fc7.ts.net:8443/v1`
+- **Tailnet Internal Endpoint**: `https://mac-studio-2.tail299fc7.ts.net:1234/v1`
+- **Mac Studio Local Loopback**: `http://127.0.0.1:1234/v1`
+- **Active Model**: `qwen3-vl-30b-a3b-instruct-mlx`
+
+If running on a different machine or port, create a `.env` file from `.env.example`:
+```bash
+cp .env.example .env
+```
 
 ---
 
@@ -40,7 +45,7 @@ Open **[http://localhost:5050](http://localhost:5050)** in your browser!
 You can transform this starter template into any type of specialized coach (e.g. *Writing Coach*, *Job Interview Prep*, *Course Planning Assistant*, *Leadership Mentor*) by editing 4 files:
 
 ### 1. Update the Coach Persona & Prompt (`app.py`)
-In `app.py`, update `SYSTEM_PROMPT` and `MODE_CONTEXTS` to teach Gemini your agent's role, tone, and guidance for each step:
+In `app.py`, update `SYSTEM_PROMPT` and `MODE_CONTEXTS` to teach Qwen your agent's role, tone, and guidance for each step:
 
 ```python
 SYSTEM_PROMPT = """You are [New Coach Name]. Your goal is to guide the user in [Topic]..."""
@@ -91,9 +96,9 @@ In `static/styles.css`, change the 3 CSS variables at the top to match your depa
 ## 🛡️ Built-In Privacy & Security Guardrails
 
 - **PII Guardrail**: Regex filters automatically reject Social Security numbers, credit card numbers, and passwords before any text is sent to the AI model.
-- **Sliding-Window Rate Limiter**: Automatically caps requests per IP (default: 80 requests/minute) to protect your quota from abuse.
+- **Sliding-Window Rate Limiter**: Automatically caps requests per IP (default: 80 requests/minute) to protect the shared server from abuse.
 - **Zero Third-Party Packages**: Uses Python's built-in `http.server` and `urllib.request`. No `pip install` issues, virtual environment conflicts, or dependency security vulnerabilities.
-- **Safe Fallback**: If offline or if the API key is missing, provides helpful guidance gracefully with `live: false`.
+- **Safe Fallback**: If offline or if the inference server is restarting, provides helpful guidance gracefully with `live: false`.
 
 ---
 

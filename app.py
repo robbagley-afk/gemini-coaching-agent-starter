@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Gemini Coaching Agent Starter Template
----------------------------------------
+LM Studio Qwen Coaching Agent Starter Template
+----------------------------------------------
 A lightweight, zero-dependency Python backend for a multi-step generative AI coach
-powered by Google Gemini (gemini-2.5-flash).
+powered by Qwen (qwen3-vl-30b-a3b-instruct-mlx) on LM Studio via a public Tailscale tunnel.
 
 Features:
 - Pure Python standard library (no pip install required)
+- Uses shared LM Studio Qwen endpoint (no API key needed!)
 - Built-in Privacy / PII filters (blocks SSNs, credit cards, passwords)
 - Per-IP sliding window rate limiting
 - Multi-step workflow context routing
@@ -29,7 +30,7 @@ from urllib.request import Request, urlopen
 # 1. CONFIGURATION
 # ==============================================================================
 
-# Load .env file manually if present (so no python-dotenv dependency is needed)
+# Load .env file manually if present (no external packages needed)
 env_path = Path(__file__).resolve().parent / ".env"
 if env_path.exists():
     for line in env_path.read_text(encoding="utf-8").splitlines():
@@ -38,11 +39,15 @@ if env_path.exists():
             k, v = line.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
-# Read settings from environment variables
-API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
+# Public Tailscale Funnel endpoint for Mac Studio LM Studio (or local loopback http://127.0.0.1:1234/v1)
+LM_STUDIO_URL = os.environ.get(
+    "LM_STUDIO_URL",
+    "https://mac-studio-2.tail299fc7.ts.net:8443/v1"
+).rstrip("/")
+
+MODEL = os.environ.get("MODEL_NAME", "qwen3-vl-30b-a3b-instruct-mlx").strip()
 PORT = int(os.environ.get("PORT", "5050"))
-HOST = os.environ.get("HOST", "127.0.0.1")
+HOST = os.environ.get("HOST", "0.0.0.0")
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MIN", "80"))
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -113,11 +118,11 @@ class SlidingWindowRateLimiter:
 RATE_LIMITER = SlidingWindowRateLimiter(limit_per_minute=RATE_LIMIT)
 
 # ==============================================================================
-# 5. GEMINI INFERENCE & FALLBACK ENGINE
+# 5. LM STUDIO QWEN INFERENCE & FALLBACK ENGINE
 # ==============================================================================
 
 def fallback_reply(message: str, mode: str) -> str:
-    """Safe fallback response if API key is missing or offline."""
+    """Safe fallback response if LM Studio is offline or unreachable."""
     fallbacks = {
         "step1": "Great start exploring this topic! Tell me more about what specific goal or organization you want to target.",
         "step2": "Let's work on your message. Share your main goal, one clear proof point or example, and what makes you unique.",
@@ -127,66 +132,54 @@ def fallback_reply(message: str, mode: str) -> str:
     return fallbacks.get(mode, "Thanks for sharing! What specific aspect would you like to work on next?")
 
 
-def ask_gemini(message: str, mode: str, history: list[dict[str, str]]) -> tuple[str, bool]:
+def ask_qwen(message: str, mode: str, history: list[dict[str, str]]) -> tuple[str, bool]:
     """
-    Calls Google Gemini GenerateContent API via v1beta REST endpoint.
+    Calls LM Studio OpenAI-compatible /v1/chat/completions endpoint.
     Returns (reply_text, is_live_ai_boolean).
     """
-    api_key = API_KEY.strip()
-    if not api_key:
-        return fallback_reply(message, mode), False
-
     mode_context = MODE_CONTEXTS.get(mode, "")
-    system_instruction = f"{SYSTEM_PROMPT}\n\n{mode_context}".strip()
+    system_content = f"{SYSTEM_PROMPT}\n\n{mode_context}".strip()
 
-    # Build Gemini multi-turn format
-    contents = []
-    for item in history[-8:]:  # keep last 8 turns of context
-        role = item.get("role")
+    messages = [{"role": "system", "content": system_content}]
+
+    # Include recent multi-turn history
+    for item in history[-8:]:
+        role = item.get("role", "user")
         content = str(item.get("content", "")).strip()
-        if role == "user" and content:
-            contents.append({"role": "user", "parts": [{"text": content}]})
-        elif role == "assistant" and content:
-            contents.append({"role": "model", "parts": [{"text": content}]})
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": content})
 
-    contents.append({"role": "user", "parts": [{"text": message}]})
+    messages.append({"role": "user", "content": message})
 
     payload = {
-        "systemInstruction": {"parts": [{"text": system_instruction}]},
-        "contents": contents,
-        "generationConfig": {
-            "temperature": 0.4,
-            "maxOutputTokens": 2048,
-        },
+        "model": MODEL,
+        "messages": messages,
+        "temperature": 0.4,
+        "max_tokens": 1024,
     }
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
+    url = f"{LM_STUDIO_URL}/chat/completions"
     req_data = json.dumps(payload).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
-        "x-goog-api-key": api_key,
     }
 
     request = Request(url, data=req_data, headers=headers, method="POST")
     try:
-        with urlopen(request, timeout=30, context=ssl.create_default_context()) as resp:
+        with urlopen(request, timeout=45, context=ssl.create_default_context()) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
-        candidates = data.get("candidates", [])
-        if not candidates:
+        choices = data.get("choices", [])
+        if not choices:
             return fallback_reply(message, mode), False
 
-        parts = candidates[0].get("content", {}).get("parts", [])
-        if not parts:
-            return fallback_reply(message, mode), False
-
-        reply_text = parts[0].get("text", "").strip()
+        reply_text = choices[0].get("message", {}).get("content", "").strip()
         if not reply_text:
             return fallback_reply(message, mode), False
 
         return reply_text, True
     except (URLError, HTTPError, TimeoutError, ValueError, KeyError, OSError) as e:
-        print(f"[Gemini API Error] {e}")
+        print(f"[LM Studio Inference Error] {e}")
         return fallback_reply(message, mode), False
 
 
@@ -213,8 +206,9 @@ class CoachHandler(SimpleHTTPRequestHandler):
             self._json({
                 "status": "ok",
                 "service": "AI Coach",
+                "engine": "LM Studio Qwen",
                 "model": MODEL,
-                "live_configured": bool(API_KEY),
+                "endpoint": LM_STUDIO_URL,
                 "rate_limit_per_min": RATE_LIMIT,
             })
             return
@@ -257,8 +251,8 @@ class CoachHandler(SimpleHTTPRequestHandler):
             self._json({"error": privacy_warning}, HTTPStatus.BAD_REQUEST)
             return
 
-        # 4. Generate Coach Response
-        reply, is_live = ask_gemini(message, mode, history)
+        # 4. Generate Coach Response via Qwen
+        reply, is_live = ask_qwen(message, mode, history)
         self._json({"reply": reply, "live": is_live})
 
 
@@ -269,9 +263,12 @@ class CoachHandler(SimpleHTTPRequestHandler):
 def main():
     server_address = (HOST, PORT)
     with ThreadingHTTPServer(server_address, CoachHandler) as httpd:
-        print(f"🚀 AI Coach Starter running at http://{HOST}:{PORT}")
-        print(f"   Model: {MODEL} | Gemini Key Configured: {bool(API_KEY)}")
-        print("   Press Ctrl+C to stop.")
+        print("================================================================")
+        print(f"🚀 AI Coach Starter running at http://localhost:{PORT}")
+        print(f"   Inference Engine: LM Studio ({MODEL})")
+        print(f"   Endpoint:         {LM_STUDIO_URL}")
+        print("================================================================")
+        print("Press Ctrl+C to stop.")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
