@@ -1,0 +1,455 @@
+/* ==============================================================================
+   AI COACH STARTER THEME VARIABLES
+   ------------------------------------------------------------------------------
+   Easily customize your brand colors by editing the 3 hex values below!
+   ============================================================================== */
+:root {
+  --primary: #1e3a8a;        /* Main brand color (header, user bubble, buttons) */
+  --primary-deep: #0f172a;   /* Dark background gradient top */
+  --primary-darker: #172554; /* Button hover & active states */
+  --accent-gold: #f59e0b;    /* Highlight accent (step badges & active glow) */
+  --ink: #0f172a;            /* Dark text color */
+  --muted: #64748b;          /* Secondary subtext */
+  --paper: #ffffff;          /* Card surface white */
+  --bubble-ai: #f1f5f9;      /* AI message bubble background */
+  --line: #e2e8f0;           /* Subtle borders */
+  --shadow: 0 12px 36px rgba(15, 23, 42, 0.18);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: var(--primary-deep);
+  background: linear-gradient(175deg, var(--primary-deep) 0%, var(--primary) 60%, #1e40af 100%);
+  color: var(--paper);
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+/* Header */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+}
+
+.brand-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.brand {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: var(--accent-gold);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.quiet-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.quiet-button:hover, .quiet-button:active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Compact 4-Step Prep Navigation */
+.step-nav {
+  padding: 4px 12px 10px;
+}
+
+.step-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.step-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 38px;
+  padding: 2px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.35);
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.step-num {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.18s ease;
+}
+
+.step-text {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.step-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.step-btn.active {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--accent-gold);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.step-btn.active .step-num {
+  background: var(--accent-gold);
+  color: var(--primary-deep);
+  border-color: var(--accent-gold);
+}
+
+.step-btn.active .step-text {
+  color: #ffffff;
+}
+
+/* Main Content Workspace */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+}
+
+/* Coach Chat Panel */
+.coach-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  min-height: 480px;
+}
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fafc;
+}
+
+.coach-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: var(--primary);
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--primary);
+}
+
+.coach-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.coach-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.mode-label {
+  margin: 1px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.status {
+  font-size: 12px;
+  font-weight: 700;
+  color: #15803d;
+  background: #f0fdf4;
+  padding: 4px 9px;
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+}
+
+/* Messages */
+.messages {
+  flex: 1;
+  min-height: 260px;
+  max-height: calc(100vh - 290px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  max-width: 90%;
+  padding: 12px 15px;
+  border-radius: 16px;
+  line-height: 1.48;
+  font-size: 14.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.message.assistant {
+  background: var(--bubble-ai);
+  color: var(--ink);
+  align-self: flex-start;
+  border-top-left-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.message.user {
+  background: var(--primary);
+  color: #ffffff;
+  align-self: flex-end;
+  border-top-right-radius: 4px;
+}
+
+.message small {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* Suggested Prompts */
+.suggestions-wrap {
+  padding: 4px 14px 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.suggestions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: nowrap;
+}
+
+.suggestions button {
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: var(--primary-deep);
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.suggestions button:hover, .suggestions button:active {
+  background: #eff6ff;
+  border-color: var(--primary);
+}
+
+/* Composer Form */
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--line);
+  background: #ffffff;
+}
+
+textarea#message-input {
+  flex: 1;
+  height: 44px;
+  min-height: 44px;
+  max-height: 90px;
+  padding: 11px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 20px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+  line-height: 1.35;
+  resize: none;
+  background: #f8fafc;
+}
+
+textarea#message-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+}
+
+.composer button {
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--primary);
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.composer button:hover {
+  background: var(--primary-darker);
+}
+
+.composer button:active {
+  transform: scale(0.97);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+/* Footer */
+.app-footer {
+  padding: 16px 16px 24px;
+  text-align: center;
+}
+
+.footer-privacy {
+  margin: 0;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Tablet & Desktop Enhancements */
+@media (min-width: 860px) {
+  .app-container {
+    padding: 0 20px;
+  }
+
+  .topbar {
+    padding: 20px 0 14px;
+  }
+
+  .brand {
+    font-size: 26px;
+  }
+
+  .step-nav {
+    padding: 6px 0 16px;
+  }
+
+  .step-list {
+    gap: 12px;
+  }
+
+  .step-btn {
+    height: 44px;
+    padding: 4px 12px;
+    gap: 8px;
+  }
+
+  .step-num {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .step-text {
+    font-size: 14px;
+  }
+
+  .main-content {
+    padding: 0;
+  }
+
+  .coach-panel {
+    min-height: 540px;
+  }
+
+  .messages {
+    max-height: 440px;
+    padding: 20px;
+  }
+
+  .suggestions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *:before, *:after {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
