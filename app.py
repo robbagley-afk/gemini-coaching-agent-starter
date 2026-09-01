@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """
-LM Studio Qwen Coaching Agent Starter Template
+Dual-Engine AI Coaching Agent Starter Template
 ----------------------------------------------
-A lightweight, zero-dependency Python backend for a multi-step generative AI coach
-powered by Qwen (qwen3-vl-30b-a3b-instruct-mlx) on LM Studio via a public Tailscale tunnel.
+A lightweight, zero-dependency Python backend for a multi-step generative AI coach.
+
+Inference Strategy:
+1. Primary:  Qwen (qwen3-vl-30b-a3b-instruct-mlx) on LM Studio via public Tailscale tunnel
+2. Fallback: Google Gemini (gemini-2.5-flash) if LM Studio is unreachable
+3. Offline:  Safe structured coaching guidance if both are unavailable
 
 Features:
 - Pure Python standard library (no pip install required)
-- Uses shared LM Studio Qwen endpoint (no API key needed!)
+- Default rate limit: 50 requests/minute per IP
 - Built-in Privacy / PII filters (blocks SSNs, credit cards, passwords)
-- Per-IP sliding window rate limiting
 - Multi-step workflow context routing
-- Safe fallback responses when offline
+- Automatic seamless fallback
 """
 
 import json
@@ -39,16 +42,21 @@ if env_path.exists():
             k, v = line.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
-# Public Tailscale Funnel endpoint for Mac Studio LM Studio (or local loopback http://127.0.0.1:1234/v1)
+# Primary Engine: LM Studio Qwen via public Tailscale tunnel or local loopback
 LM_STUDIO_URL = os.environ.get(
     "LM_STUDIO_URL",
     "https://mac-studio-2.tail299fc7.ts.net:8443/v1"
 ).rstrip("/")
+QWEN_MODEL = os.environ.get("MODEL_NAME", "qwen3-vl-30b-a3b-instruct-mlx").strip()
 
-MODEL = os.environ.get("MODEL_NAME", "qwen3-vl-30b-a3b-instruct-mlx").strip()
+# Fallback Engine: Google Gemini API (optional, used if Qwen is unreachable)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
+
+# Server Settings
 PORT = int(os.environ.get("PORT", "5050"))
 HOST = os.environ.get("HOST", "0.0.0.0")
-RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MIN", "80"))
+RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MIN", "50"))
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -97,11 +105,11 @@ def check_privacy(text: str) -> str | None:
     return None
 
 # ==============================================================================
-# 4. SLIDING-WINDOW RATE LIMITER
+# 4. SLIDING-WINDOW RATE LIMITER (DEFAULT: 50 REQ/MIN)
 # ==============================================================================
 
 class SlidingWindowRateLimiter:
-    def __init__(self, limit_per_minute: int = 80):
+    def __init__(self, limit_per_minute: int = 50):
         self.limit = limit_per_minute
         self.requests = defaultdict(list)
 
@@ -118,11 +126,11 @@ class SlidingWindowRateLimiter:
 RATE_LIMITER = SlidingWindowRateLimiter(limit_per_minute=RATE_LIMIT)
 
 # ==============================================================================
-# 5. LM STUDIO QWEN INFERENCE & FALLBACK ENGINE
+# 5. INFERENCE ENGINES (PRIMARY: QWEN -> FALLBACK: GEMINI -> OFFLINE)
 # ==============================================================================
 
 def fallback_reply(message: str, mode: str) -> str:
-    """Safe fallback response if LM Studio is offline or unreachable."""
+    """Safe fallback response if both inference engines are unreachable."""
     fallbacks = {
         "step1": "Great start exploring this topic! Tell me more about what specific goal or organization you want to target.",
         "step2": "Let's work on your message. Share your main goal, one clear proof point or example, and what makes you unique.",
@@ -132,17 +140,12 @@ def fallback_reply(message: str, mode: str) -> str:
     return fallbacks.get(mode, "Thanks for sharing! What specific aspect would you like to work on next?")
 
 
-def ask_qwen(message: str, mode: str, history: list[dict[str, str]]) -> tuple[str, bool]:
-    """
-    Calls LM Studio OpenAI-compatible /v1/chat/completions endpoint.
-    Returns (reply_text, is_live_ai_boolean).
-    """
+def query_qwen(message: str, mode: str, history: list[dict[str, str]]) -> str | None:
+    """Queries LM Studio Qwen via OpenAI-compatible /v1/chat/completions."""
     mode_context = MODE_CONTEXTS.get(mode, "")
     system_content = f"{SYSTEM_PROMPT}\n\n{mode_context}".strip()
 
     messages = [{"role": "system", "content": system_content}]
-
-    # Include recent multi-turn history
     for item in history[-8:]:
         role = item.get("role", "user")
         content = str(item.get("content", "")).strip()
@@ -152,7 +155,7 @@ def ask_qwen(message: str, mode: str, history: list[dict[str, str]]) -> tuple[st
     messages.append({"role": "user", "content": message})
 
     payload = {
-        "model": MODEL,
+        "model": QWEN_MODEL,
         "messages": messages,
         "temperature": 0.4,
         "max_tokens": 1024,
@@ -160,27 +163,93 @@ def ask_qwen(message: str, mode: str, history: list[dict[str, str]]) -> tuple[st
 
     url = f"{LM_STUDIO_URL}/chat/completions"
     req_data = json.dumps(payload).encode("utf-8")
+    headers = {"Content-Type": "application/json"}
+
+    request = Request(url, data=req_data, headers=headers, method="POST")
+    with urlopen(request, timeout=35, context=ssl.create_default_context()) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+
+    choices = data.get("choices", [])
+    if choices:
+        return choices[0].get("message", {}).get("content", "").strip() or None
+    return None
+
+
+def query_gemini(message: str, mode: str, history: list[dict[str, str]]) -> str | None:
+    """Queries Google Gemini GenerateContent API as fallback."""
+    if not GEMINI_API_KEY:
+        return None
+
+    mode_context = MODE_CONTEXTS.get(mode, "")
+    system_instruction = f"{SYSTEM_PROMPT}\n\n{mode_context}".strip()
+
+    contents = []
+    for item in history[-8:]:
+        role = item.get("role")
+        content = str(item.get("content", "")).strip()
+        if role == "user" and content:
+            contents.append({"role": "user", "parts": [{"text": content}]})
+        elif role == "assistant" and content:
+            contents.append({"role": "model", "parts": [{"text": content}]})
+
+    contents.append({"role": "user", "parts": [{"text": message}]})
+
+    payload = {
+        "systemInstruction": {"parts": [{"text": system_instruction}]},
+        "contents": contents,
+        "generationConfig": {
+            "temperature": 0.4,
+            "maxOutputTokens": 2048,
+        },
+    }
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+    req_data = json.dumps(payload).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
     }
 
     request = Request(url, data=req_data, headers=headers, method="POST")
+    with urlopen(request, timeout=30, context=ssl.create_default_context()) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+
+    candidates = data.get("candidates", [])
+    if candidates:
+        parts = candidates[0].get("content", {}).get("parts", [])
+        if parts:
+            return parts[0].get("text", "").strip() or None
+    return None
+
+
+def ask_coach(message: str, mode: str, history: list[dict[str, str]]) -> tuple[str, bool, str]:
+    """
+    Dual-engine coordinator:
+    1. Try Primary (LM Studio Qwen)
+    2. Fallback to Gemini (if Qwen is down and key exists)
+    3. Fallback to offline guidance
+    Returns (reply_text, is_live_ai, engine_name).
+    """
+    # 1. Primary: LM Studio Qwen
     try:
-        with urlopen(request, timeout=45, context=ssl.create_default_context()) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+        reply = query_qwen(message, mode, history)
+        if reply:
+            return reply, True, "qwen"
+    except Exception as e:
+        print(f"[Primary Qwen Unavailable] {e}")
 
-        choices = data.get("choices", [])
-        if not choices:
-            return fallback_reply(message, mode), False
+    # 2. Fallback: Google Gemini
+    if GEMINI_API_KEY:
+        try:
+            print("[Inference] Switching to Google Gemini fallback...")
+            reply = query_gemini(message, mode, history)
+            if reply:
+                return reply, True, "gemini"
+        except Exception as e:
+            print(f"[Fallback Gemini Error] {e}")
 
-        reply_text = choices[0].get("message", {}).get("content", "").strip()
-        if not reply_text:
-            return fallback_reply(message, mode), False
-
-        return reply_text, True
-    except (URLError, HTTPError, TimeoutError, ValueError, KeyError, OSError) as e:
-        print(f"[LM Studio Inference Error] {e}")
-        return fallback_reply(message, mode), False
+    # 3. Final Fallback: Offline guidance
+    return fallback_reply(message, mode), False, "fallback"
 
 
 # ==============================================================================
@@ -206,9 +275,11 @@ class CoachHandler(SimpleHTTPRequestHandler):
             self._json({
                 "status": "ok",
                 "service": "AI Coach",
-                "engine": "LM Studio Qwen",
-                "model": MODEL,
-                "endpoint": LM_STUDIO_URL,
+                "primary_engine": "LM Studio Qwen",
+                "primary_model": QWEN_MODEL,
+                "primary_endpoint": LM_STUDIO_URL,
+                "fallback_engine": "Google Gemini" if GEMINI_API_KEY else "Static Fallback",
+                "fallback_configured": bool(GEMINI_API_KEY),
                 "rate_limit_per_min": RATE_LIMIT,
             })
             return
@@ -223,7 +294,7 @@ class CoachHandler(SimpleHTTPRequestHandler):
         client_ip = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[0].strip()
         if not RATE_LIMITER.is_allowed(client_ip):
             self._json(
-                {"error": "Rate limit exceeded. Please wait a moment before sending another message."},
+                {"error": f"Rate limit of {RATE_LIMIT} req/min exceeded. Please wait a moment before sending another message."},
                 HTTPStatus.TOO_MANY_REQUESTS,
             )
             return
@@ -251,9 +322,9 @@ class CoachHandler(SimpleHTTPRequestHandler):
             self._json({"error": privacy_warning}, HTTPStatus.BAD_REQUEST)
             return
 
-        # 4. Generate Coach Response via Qwen
-        reply, is_live = ask_qwen(message, mode, history)
-        self._json({"reply": reply, "live": is_live})
+        # 4. Generate Coach Response via Dual-Engine Coordinator
+        reply, is_live, engine = ask_coach(message, mode, history)
+        self._json({"reply": reply, "live": is_live, "engine": engine})
 
 
 # ==============================================================================
@@ -265,8 +336,10 @@ def main():
     with ThreadingHTTPServer(server_address, CoachHandler) as httpd:
         print("================================================================")
         print(f"🚀 AI Coach Starter running at http://localhost:{PORT}")
-        print(f"   Inference Engine: LM Studio ({MODEL})")
-        print(f"   Endpoint:         {LM_STUDIO_URL}")
+        print(f"   Primary Engine:   LM Studio Qwen ({QWEN_MODEL})")
+        print(f"   Primary Endpoint: {LM_STUDIO_URL}")
+        print(f"   Fallback Engine:  {'Google Gemini (' + GEMINI_MODEL + ')' if GEMINI_API_KEY else 'Offline Fallback (Set GEMINI_API_KEY to enable Gemini)'}")
+        print(f"   Rate Limit:       {RATE_LIMIT} req/min per IP")
         print("================================================================")
         print("Press Ctrl+C to stop.")
         try:

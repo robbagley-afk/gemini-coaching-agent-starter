@@ -1,8 +1,9 @@
-# 🚀 AI Coaching Agent Starter Template (LM Studio Qwen Powered)
+# 🚀 AI Coaching Agent Starter Template (Dual-Engine: Qwen + Gemini Fallback)
 
-A clean, production-ready, mobile-first generative AI coaching application powered by **Qwen** (`qwen3-vl-30b-a3b-instruct-mlx`) running on **LM Studio** via a dedicated **public Tailscale tunnel**.
-
-**Zero cloud API keys required!** Any application cloned or built from this starter template automatically connects to the shared Mac Studio local LLM inference stack.
+A clean, production-ready, mobile-first generative AI coaching application with a **dual-tier inference engine**:
+1. **Primary**: **Qwen** (`qwen3-vl-30b-a3b-instruct-mlx`) hosted on **LM Studio** via a public Tailscale tunnel (zero cost, zero setup).
+2. **Fallback**: **Google Gemini** (`gemini-2.5-flash`) used automatically if the local model is offline or unreachable.
+3. **Offline**: Safe structured coaching responses if both AI models are unavailable.
 
 ---
 
@@ -20,22 +21,25 @@ python3 app.py
 ```
 Open **[http://localhost:5050](http://localhost:5050)** in your browser!
 
-*(The app immediately connects to `https://mac-studio-2.tail299fc7.ts.net:8443/v1` for live Qwen inference at zero cost).*
+*(By default, the app immediately connects to `https://mac-studio-2.tail299fc7.ts.net:8443/v1` for live Qwen inference at zero cost).*
 
 ---
 
-## 🌐 Public Tailscale Inference Tunnel
+## 🔄 Dual-Tier Inference Architecture
 
-The app connects to the shared LM Studio OpenAI-compatible endpoint:
+| Tier | Engine | Target | Description |
+| :--- | :--- | :--- | :--- |
+| **Tier 1 (Primary)** | **LM Studio Qwen** | `https://mac-studio-2.tail299fc7.ts.net:8443/v1` | Fast, token-free, private local inference. |
+| **Tier 2 (Fallback)** | **Google Gemini** | `gemini-2.5-flash` | Cloud fallback if LM Studio is restarting or offline. (Set `GEMINI_API_KEY` in `.env`). |
+| **Tier 3 (Offline)** | **Structured Fallback** | Local Python engine | Helpful guidance guaranteed even without internet. |
 
-- **Public Tailscale Tunnel Endpoint**: `https://mac-studio-2.tail299fc7.ts.net:8443/v1`
-- **Tailnet Internal Endpoint**: `https://mac-studio-2.tail299fc7.ts.net:1234/v1`
-- **Mac Studio Local Loopback**: `http://127.0.0.1:1234/v1`
-- **Active Model**: `qwen3-vl-30b-a3b-instruct-mlx`
-
-If running on a different machine or port, create a `.env` file from `.env.example`:
+To configure the optional Gemini fallback, copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
+```
+And add your free Gemini key:
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ---
@@ -45,7 +49,7 @@ cp .env.example .env
 You can transform this starter template into any type of specialized coach (e.g. *Writing Coach*, *Job Interview Prep*, *Course Planning Assistant*, *Leadership Mentor*) by editing 4 files:
 
 ### 1. Update the Coach Persona & Prompt (`app.py`)
-In `app.py`, update `SYSTEM_PROMPT` and `MODE_CONTEXTS` to teach Qwen your agent's role, tone, and guidance for each step:
+In `app.py`, update `SYSTEM_PROMPT` and `MODE_CONTEXTS` to teach the coach its role, tone, and guidance for each step:
 
 ```python
 SYSTEM_PROMPT = """You are [New Coach Name]. Your goal is to guide the user in [Topic]..."""
@@ -95,10 +99,9 @@ In `static/styles.css`, change the 3 CSS variables at the top to match your depa
 
 ## 🛡️ Built-In Privacy & Security Guardrails
 
+- **Default Rate Limiter**: Configured to **50 requests/minute per IP** (customizable via `RATE_LIMIT_PER_MIN`).
 - **PII Guardrail**: Regex filters automatically reject Social Security numbers, credit card numbers, and passwords before any text is sent to the AI model.
-- **Sliding-Window Rate Limiter**: Automatically caps requests per IP (default: 80 requests/minute) to protect the shared server from abuse.
-- **Zero Third-Party Packages**: Uses Python's built-in `http.server` and `urllib.request`. No `pip install` issues, virtual environment conflicts, or dependency security vulnerabilities.
-- **Safe Fallback**: If offline or if the inference server is restarting, provides helpful guidance gracefully with `live: false`.
+- **Zero Third-Party Packages**: Uses Python's built-in `http.server` and `urllib.request`. No `pip install` issues, virtual environment conflicts, or dependency vulnerabilities.
 
 ---
 
