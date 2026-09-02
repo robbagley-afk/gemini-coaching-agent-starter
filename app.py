@@ -47,6 +47,10 @@ LM_STUDIO_URL = os.environ.get(
     "https://mac-studio-2.tail299fc7.ts.net:8443/v1"
 ).rstrip("/")
 QWEN_MODEL = os.environ.get("MODEL_NAME", "qwen3-vl-30b-a3b-instruct-mlx").strip()
+# Required for the public mac-studio-2.tail299fc7.ts.net:8443 endpoint (auth-gated).
+# Request a key from robbagley@ensign.edu, or run against your own LM Studio
+# instance (LM_STUDIO_URL=http://127.0.0.1:1234/v1) with this left blank.
+LM_STUDIO_API_KEY = os.environ.get("LM_STUDIO_API_KEY", "").strip()
 
 # Fallback Engine: Google Gemini API (optional, used if Qwen is unreachable)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
@@ -197,6 +201,8 @@ def query_qwen(message: str, mode: str, history: list[dict[str, str]]) -> str | 
     url = f"{LM_STUDIO_URL}/chat/completions"
     req_data = json.dumps(payload).encode("utf-8")
     headers = {"Content-Type": "application/json"}
+    if LM_STUDIO_API_KEY:
+        headers["Authorization"] = f"Bearer {LM_STUDIO_API_KEY}"
 
     request = Request(url, data=req_data, headers=headers, method="POST")
     with urlopen(request, timeout=35, context=ssl.create_default_context()) as resp:

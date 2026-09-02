@@ -21,7 +21,25 @@ python3 app.py
 ```
 Open **[http://localhost:5050](http://localhost:5050)** in your browser!
 
-*(By default, the app immediately connects to `https://mac-studio-2.tail299fc7.ts.net:8443/v1` for live Qwen inference at zero cost).*
+*(By default, the app is configured to connect to `https://mac-studio-2.tail299fc7.ts.net:8443/v1` for live Qwen inference at zero cost -- see "Getting Access to Tier 1 (Qwen)" below, since this endpoint requires a key).*
+
+---
+
+## 🔑 Getting Access to Tier 1 (Qwen)
+
+The public LM Studio endpoint (`mac-studio-2.tail299fc7.ts.net:8443`) is **not open access** -- it requires an API key, rate-limited per key. Without one, requests to it return `401` and the app automatically falls back to Tier 2 (Gemini) or Tier 3 (offline guidance), so the app still works, just without free local inference.
+
+**Option A -- Request a key (recommended if you want free Qwen inference):**
+Email **robbagley@ensign.edu** with your name and intended use. You'll get back a key to set as `LM_STUDIO_API_KEY` in your `.env` file (see `.env.example`).
+
+**Option B -- Generate your own Google Gemini key (fastest, no waiting):**
+1. Go to [Google AI Studio](https://aistudio.google.com/apikey) and sign in with a Google account.
+2. Click "Create API key" -- the free tier requires no credit card.
+3. Paste it into your `.env` file as `GEMINI_API_KEY`.
+4. The app will use Gemini automatically whenever Qwen is unavailable or unconfigured.
+
+**Option C -- Run your own local model:**
+If you have LM Studio (or any OpenAI-compatible server) running locally, point `LM_STUDIO_URL` at it (e.g. `http://127.0.0.1:1234/v1`) and leave `LM_STUDIO_API_KEY` blank.
 
 ---
 
