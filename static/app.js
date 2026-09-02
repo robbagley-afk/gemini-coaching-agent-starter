@@ -205,10 +205,16 @@ function addMessage(role, text, responseId = null, questionText = '') {
 
   messagesEl.appendChild(item);
 
-  // Smooth scroll
+  // Requirement: When AI responds, ensure the TOP of the response is shown rather than the bottom!
   requestAnimationFrame(() => {
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (role === 'assistant') {
+      const targetTop = Math.max(0, item.offsetTop - 8);
+      messagesEl.scrollTo({ top: targetTop, behavior: 'smooth' });
+      item.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   });
 }
 
@@ -244,9 +250,8 @@ function setMode(modeKey) {
     btn.type = 'button';
     btn.textContent = promptText;
     btn.addEventListener('click', () => {
-      inputEl.value = promptText;
-      inputEl.focus();
-      autoGrowInput();
+      inputEl.value = '';
+      submitMessage(promptText);
     });
     suggestionsEl.appendChild(btn);
   });
@@ -292,9 +297,9 @@ async function submitMessage(message) {
 }
 
 function autoGrowInput() {
-  inputEl.style.height = '44px';
-  if (inputEl.scrollHeight > 44) {
-    inputEl.style.height = `${Math.min(inputEl.scrollHeight, 90)}px`;
+  inputEl.style.height = '48px';
+  if (inputEl.scrollHeight > 48) {
+    inputEl.style.height = `${Math.min(inputEl.scrollHeight, 110)}px`;
   }
 }
 
@@ -304,7 +309,7 @@ formEl.addEventListener('submit', async (e) => {
   const msg = inputEl.value.trim();
   if (!msg) return;
   inputEl.value = '';
-  inputEl.style.height = '44px';
+  inputEl.style.height = '48px';
   await submitMessage(msg);
 });
 

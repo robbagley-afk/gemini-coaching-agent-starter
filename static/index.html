@@ -61,19 +61,28 @@
           <!-- Message Transcript -->
           <div id="messages" class="messages"></div>
 
-          <!-- Clickable Suggested Prompts -->
+          <!-- Clickable Suggested Prompts (Key Interaction Starters) -->
           <div class="suggestions-wrap">
+            <div class="suggestions-header">
+              <span class="suggestions-icon" aria-hidden="true">⚡</span>
+              <span>Quick Starters — tap to ask:</span>
+            </div>
             <div class="suggestions" id="suggestions"></div>
           </div>
 
           <!-- Input Composer Form -->
           <form id="chat-form" class="composer">
-            <label class="sr-only" for="message-input">Message the coach</label>
-            <textarea id="message-input" rows="1" placeholder="Type your message or select a prompt above..."></textarea>
-            <button type="submit" aria-label="Send message" id="send-button">
-              <span>Send</span>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
+            <label class="composer-label" for="message-input">
+              <span class="composer-label-icon" aria-hidden="true">💬</span>
+              <span>Ask AI Coach:</span>
+            </label>
+            <div class="composer-row">
+              <textarea id="message-input" rows="1" placeholder="Type your question or message here..."></textarea>
+              <button type="submit" aria-label="Send message" id="send-button">
+                <span>Send</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
           </form>
         </section>
       </main>
