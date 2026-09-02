@@ -25,22 +25,18 @@
 html, body {
   margin: 0;
   padding: 0;
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100vh;
   background: var(--primary-deep);
   background: linear-gradient(175deg, var(--primary-deep) 0%, var(--primary) 60%, #1e40af 100%);
   color: var(--paper);
-  overflow: hidden;
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100vh;
   max-width: 860px;
   margin: 0 auto;
-  overflow: hidden;
 }
 
 /* Header */
@@ -241,7 +237,7 @@ html, body {
 /* Messages */
 .messages {
   flex: 1;
-  min-height: 0;
+  min-height: 380px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 14px;
@@ -313,10 +309,16 @@ html, body {
 
 .suggestions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   gap: 6px;
-  max-height: 100px;
-  overflow-y: auto;
+  padding-bottom: 2px;
+}
+
+.suggestions::-webkit-scrollbar {
+  display: none;
 }
 
 .suggestions button {
@@ -331,7 +333,8 @@ html, body {
   cursor: pointer;
   transition: all 0.15s ease;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-  white-space: normal;
+  white-space: nowrap;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -651,7 +654,8 @@ textarea#message-input::placeholder {
 /* Mobile-First Responsive Adjustments */
 @media (max-width: 640px) {
   .app-container {
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
     max-width: 100%;
   }
   .topbar {
@@ -690,6 +694,7 @@ textarea#message-input::placeholder {
     padding: 8px 12px;
   }
   .messages {
+    min-height: 320px;
     padding: 10px 12px;
     gap: 10px;
   }
