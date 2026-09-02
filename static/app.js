@@ -86,8 +86,9 @@ function addFeedbackControls(messageArticle, responseId, questionText, answerTex
   controls.append(upButton, downButton);
 
   const form = document.createElement('form');
-  form.className = 'feedback-form';
+  form.className = 'feedback-form hidden';
   form.hidden = true;
+  form.style.display = 'none';
 
   const commentLabel = document.createElement('label');
   commentLabel.textContent = 'How can this response be improved?';
@@ -146,8 +147,12 @@ function addFeedbackControls(messageArticle, responseId, questionText, answerTex
       }
       submitted = true;
       controls.hidden = true;
+      controls.style.display = 'none';
       form.hidden = true;
+      form.classList.add('hidden');
+      form.style.display = 'none';
       prompt.hidden = true;
+      prompt.style.display = 'none';
       status.className = 'feedback-status feedback-success';
       status.textContent = payload.rating === 'up'
         ? '✓ Thank you! Marked as helpful.'
@@ -166,12 +171,16 @@ function addFeedbackControls(messageArticle, responseId, questionText, answerTex
   downButton.addEventListener('click', () => {
     if (submitted) return;
     form.hidden = false;
+    form.classList.remove('hidden');
+    form.style.display = 'block';
     status.textContent = '';
     commentInput.focus();
   });
 
   cancelButton.addEventListener('click', () => {
     form.hidden = true;
+    form.classList.add('hidden');
+    form.style.display = 'none';
     status.textContent = '';
   });
 

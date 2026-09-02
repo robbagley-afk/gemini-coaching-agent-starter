@@ -591,8 +591,9 @@ textarea#message-input::placeholder {
   border-top: 1px solid var(--line);
 }
 
-.feedback-form[hidden] {
-  display: none;
+.feedback-form[hidden],
+.feedback-form.hidden {
+  display: none !important;
 }
 
 .feedback-form label {
