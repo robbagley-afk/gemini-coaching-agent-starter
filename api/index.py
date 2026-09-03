@@ -34,7 +34,11 @@ LM_STUDIO_API_KEY = os.environ.get("LM_STUDIO_API_KEY", "").strip()
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
-RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MIN", "50"))
+def _get_int_env(key: str, default: int) -> int:
+    val = os.environ.get(key, "").strip()
+    return int(val) if val.isdigit() else default
+
+RATE_LIMIT = _get_int_env("RATE_LIMIT_PER_MIN", 50)
 DB_PATH = Path("/tmp") / "feedback.db"
 
 # ==============================================================================

@@ -57,9 +57,13 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
 # Server Settings
-PORT = int(os.environ.get("PORT", "5050"))
+def _get_int_env(key: str, default: int) -> int:
+    val = os.environ.get(key, "").strip()
+    return int(val) if val.isdigit() else default
+
+PORT = _get_int_env("PORT", 5050)
 HOST = os.environ.get("HOST", "0.0.0.0")
-RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MIN", "50"))
+RATE_LIMIT = _get_int_env("RATE_LIMIT_PER_MIN", 50)
 
 PUBLIC_DIR = Path(__file__).resolve().parent / "public"
 STATIC_DIR = PUBLIC_DIR if PUBLIC_DIR.exists() else Path(__file__).resolve().parent / "static"
