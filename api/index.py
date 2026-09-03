@@ -263,9 +263,19 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.end_headers()
 
+    def _match_action(self, target: str) -> bool:
+        path = self.path.lower()
+        matched = (self.headers.get("x-matched-path") or "").lower()
+        forwarded = (self.headers.get("x-forwarded-uri") or "").lower()
+        return (
+            f"action={target}" in path
+            or f"/{target}" in path
+            or f"/{target}" in matched
+            or f"/{target}" in forwarded
+        )
+
     def do_GET(self):
-        path = self.path.split("?")[0]
-        if path in ("/healthz", "/api/status"):
+        if self._match_action("status") or self._match_action("healthz") or "index.py" in self.path:
             self._json({
                 "status": "ok",
                 "service": "AI Coach (Vercel Serverless)",
@@ -280,12 +290,10 @@ class handler(BaseHTTPRequestHandler):
         self.send_error(HTTPStatus.NOT_FOUND, "Not found.")
 
     def do_POST(self):
-        path = self.path.split("?")[0]
-
         # ----------------------------------------------------------------------
         # Feedback Submission Endpoint
         # ----------------------------------------------------------------------
-        if path == "/api/feedback":
+        if self._match_action("feedback"):
             try:
                 content_length = int(self.headers.get("Content-Length", "0"))
                 raw_body = self.rfile.read(content_length).decode("utf-8")
@@ -319,7 +327,7 @@ class handler(BaseHTTPRequestHandler):
         # ----------------------------------------------------------------------
         # Chat Generation Endpoint
         # ----------------------------------------------------------------------
-        if path != "/api/chat":
+        if not self._match_action("chat") and "index.py" not in self.path:
             self.send_error(HTTPStatus.NOT_FOUND, "Not found.")
             return
 
