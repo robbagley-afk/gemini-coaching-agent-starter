@@ -61,7 +61,8 @@ PORT = int(os.environ.get("PORT", "5050"))
 HOST = os.environ.get("HOST", "0.0.0.0")
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MIN", "50"))
 
-STATIC_DIR = Path(__file__).resolve().parent / "static"
+PUBLIC_DIR = Path(__file__).resolve().parent / "public"
+STATIC_DIR = PUBLIC_DIR if PUBLIC_DIR.exists() else Path(__file__).resolve().parent / "static"
 if os.environ.get("VERCEL"):
     DB_PATH = Path("/tmp") / "feedback.db"
 else:

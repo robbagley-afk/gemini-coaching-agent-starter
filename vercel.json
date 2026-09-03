@@ -3,8 +3,6 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.py" },
-    { "source": "/healthz", "destination": "/api/index.py" },
-    { "source": "/", "destination": "/static/index.html" },
-    { "source": "/(.*)", "destination": "/static/$1" }
+    { "source": "/healthz", "destination": "/api/index.py" }
   ]
 }

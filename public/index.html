@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#1e3a8a" />
+    <title>AI Coach Starter</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Top Header -->
+      <header class="topbar">
+        <div class="brand-group">
+          <a class="brand" href="/" aria-label="AI Coach home">AI Coach Starter</a>
+          <span class="brand-sub">Interactive Assistant</span>
+        </div>
+        <button id="new-chat" class="quiet-button" type="button" aria-label="Start a new conversation">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+          <span>New chat</span>
+        </button>
+      </header>
+
+      <!-- Compact 4-Step Flow Navigation -->
+      <nav class="step-nav" aria-label="Preparation steps">
+        <div class="step-list">
+          <button class="step-btn active" data-mode="step1" type="button">
+            <span class="step-num">1</span>
+            <span class="step-text">Discovery</span>
+          </button>
+          <button class="step-btn" data-mode="step2" type="button">
+            <span class="step-num">2</span>
+            <span class="step-text">Drafting</span>
+          </button>
+          <button class="step-btn" data-mode="step3" type="button">
+            <span class="step-num">3</span>
+            <span class="step-text">Practice</span>
+          </button>
+          <button class="step-btn" data-mode="step4" type="button">
+            <span class="step-num">4</span>
+            <span class="step-text">Questions</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Main Chat Workspace -->
+      <main class="main-content">
+        <section class="coach-panel" aria-live="polite">
+          <div class="coach-head">
+            <div class="coach-avatar">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.3 2 6.2 5 7.4V20a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-2.6c3-1.2 5-4.1 5-7.4a8 8 0 0 0-8-8z"/><line x1="9.5" y1="9" x2="9.51" y2="9"/><line x1="14.5" y1="9" x2="14.51" y2="9"/></svg>
+            </div>
+            <div class="coach-info">
+              <p class="coach-name">AI Coach</p>
+              <p id="mode-label" class="mode-label">Discovery & Research</p>
+            </div>
+            <span id="service-status" class="status">AI Live</span>
+          </div>
+
+          <!-- Message Transcript -->
+          <div id="messages" class="messages"></div>
+
+          <!-- Clickable Suggested Prompts (Key Interaction Starters) -->
+          <div class="suggestions-wrap">
+            <div class="suggestions-header">
+              <span class="suggestions-icon" aria-hidden="true">⚡</span>
+              <span>Quick Starters — tap to ask:</span>
+            </div>
+            <div class="suggestions" id="suggestions"></div>
+          </div>
+
+          <!-- Input Composer Form -->
+          <form id="chat-form" class="composer">
+            <label class="composer-label" for="message-input">
+              <span class="composer-label-icon" aria-hidden="true">💬</span>
+              <span>Ask AI Coach:</span>
+            </label>
+            <div class="composer-row">
+              <textarea id="message-input" rows="1" placeholder="Type your question or message here..."></textarea>
+              <button type="submit" aria-label="Send message" id="send-button">
+                <span>Send</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <!-- Footer -->
+      <footer class="app-footer">
+        <p class="footer-privacy">🔒 Keep private personal, financial, and identifying information out of chat.</p>
+      </footer>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
