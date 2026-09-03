@@ -62,7 +62,10 @@ HOST = os.environ.get("HOST", "0.0.0.0")
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MIN", "50"))
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
-DB_PATH = Path(__file__).resolve().parent / "feedback.db"
+if os.environ.get("VERCEL"):
+    DB_PATH = Path("/tmp") / "feedback.db"
+else:
+    DB_PATH = Path(__file__).resolve().parent / "feedback.db"
 
 # ==============================================================================
 # 2. LOCAL FEEDBACK DATABASE (SQLITE)
@@ -92,12 +95,26 @@ init_db()
 
 def save_feedback(response_id: str, rating: str, comment: str = "", question: str = "", answer: str = "", mode: str = "", client_ip: str = ""):
     now = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-            INSERT INTO feedback (created_at, response_id, mode, rating, question, answer, comment, client_ip)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (now, response_id, mode, rating, question, answer, comment, client_ip))
-        conn.commit()
+    record = {
+        "created_at": now,
+        "response_id": response_id,
+        "mode": mode,
+        "rating": rating,
+        "question": question,
+        "answer": answer,
+        "comment": comment,
+        "client_ip": client_ip,
+    }
+    print(f"[FEEDBACK] {json.dumps(record)}", flush=True)
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("""
+                INSERT INTO feedback (created_at, response_id, mode, rating, question, answer, comment, client_ip)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (now, response_id, mode, rating, question, answer, comment, client_ip))
+            conn.commit()
+    except Exception as e:
+        print(f"[Feedback Save Error] {e}")
 
 # ==============================================================================
 # 3. COACH SYSTEM PROMPT & PERSONA

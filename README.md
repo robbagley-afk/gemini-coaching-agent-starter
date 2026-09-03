@@ -127,7 +127,21 @@ In `static/styles.css`, change the 3 CSS variables at the top to match your depa
 
 - **Instant Chat Viewport**: The chat transcript and response are immediately visible at the top of the mobile screen without having to scroll past large hero banners.
 - **Compact Segmented Step Bar**: 4-step selector takes only 38px of height for fast one-tap navigation.
-- **Responsive Layout**: Adapts gracefully across iPhones, Android devices, tablets, and desktop browsers.
+---
+
+## 🌐 Deploy to Vercel (Free 24/7 Cloud Hosting)
+
+This repository includes native Vercel serverless configuration (`vercel.json` and `api/index.py`).
+
+1. Go to [Vercel](https://vercel.com) and sign in with GitHub.
+2. Click **Add New...** → **Project**.
+3. Import your repository (`gemini-coaching-agent-starter` or your fork).
+4. Under **Environment Variables**, add:
+   - `GEMINI_API_KEY`: *(your Google AI Studio key)*
+   - `GEMINI_MODEL`: `gemini-2.5-flash` (default)
+5. Click **Deploy**.
+
+> **Result**: Your app is live with a global CDN URL (e.g. `https://your-coach-app.vercel.app`), zero cold starts, automatic HTTPS, and automatic updates whenever you push commits to GitHub!
 
 ---
 
