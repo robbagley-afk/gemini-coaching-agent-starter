@@ -4,9 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#1e3a8a" />
-    <title>AI Coach Starter</title>
+    <title>AI Coach Starter v1.0 — Ensign College Career Services</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="ces-tokens.css" />
+    <link rel="stylesheet" href="ces-components.css" />
+    <link rel="stylesheet" href="styles.css?v=starter-v1.0" />
     <!-- Vercel Web Analytics -->
     <script>
       window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
@@ -23,7 +25,7 @@
       <!-- Top Header -->
       <header class="topbar">
         <div class="brand-group">
-          <a class="brand" href="/" aria-label="AI Coach home">AI Coach Starter</a>
+          <a class="brand" href="/" aria-label="AI Coach home">AI Coach Starter <span class="ces-version-tag">v1.0</span></a>
           <span class="brand-sub">Interactive Assistant</span>
         </div>
         <button id="new-chat" class="quiet-button" type="button" aria-label="Start a new conversation">
@@ -102,6 +104,7 @@
         <p class="footer-privacy">🔒 Keep private personal, financial, and identifying information out of chat.</p>
       </footer>
     </div>
+    <script src="ces-motion.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
