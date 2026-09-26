@@ -578,7 +578,7 @@ textarea#message-input::placeholder {
 }
 
 .feedback-down {
-  color: #b91c1c;
+  color: var(--danger-text, #991b1b); /* ECC danger token, was raw #b91c1c */
 }
 
 .feedback-submit {
@@ -616,9 +616,9 @@ textarea#message-input::placeholder {
 
 .feedback-form textarea {
   width: 100%;
-  padding: 7px 9px;
+  padding: 10px 14px; /* ECC field standard: 14px sides, radius-md */
   border: 2px solid var(--input-border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font: inherit;
   font-size: var(--text-body);
   color: var(--ink);
@@ -655,7 +655,7 @@ textarea#message-input::placeholder {
 }
 
 .feedback-status.feedback-error {
-  color: #b91c1c;
+  color: var(--danger-text, #991b1b); /* ECC danger token, was raw #b91c1c */
 }
 
 @media (prefers-reduced-motion: reduce) {
