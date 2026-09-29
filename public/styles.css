@@ -6,7 +6,7 @@
 :root {
   --primary: var(--brand);          /* Main brand color (header, user bubble, buttons) */
   --primary-deep: var(--ink);       /* Maps to ECC ink */
-  --primary-darker: var(--ink);     /* Button hover & active states */
+  --primary-darker: var(--brand-hover); /* Button hover & active states (ink turned green buttons near-black) */
   --muted: var(--ink-muted);        /* Secondary subtext */
   --paper: var(--surface);          /* Card surface */
   --bubble-ai: var(--surface);      /* AI message bubble background */
@@ -76,7 +76,7 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border: 2px solid var(--border);
+  border: 2px solid var(--border-strong); /* ECC rule 8: controls take border-strong */
   background: var(--surface);
   color: var(--brand);
   padding: 6px 12px;
@@ -112,7 +112,7 @@ html, body {
   gap: 5px;
   min-height: 44px;
   padding: 2px 4px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong); /* ECC rule 8: controls take border-strong */
   border-radius: 10px;
   background: var(--surface);
   color: var(--ink);
@@ -324,7 +324,7 @@ html, body {
 }
 
 .suggestions button {
-  border: 2px solid var(--border);
+  border: 2px solid var(--border-strong); /* ECC rule 8: controls take border-strong */
   border-radius: 20px;
   background: var(--surface);
   color: var(--primary);
@@ -553,7 +553,7 @@ textarea#message-input::placeholder {
   gap: 4px;
   min-height: 44px;
   padding: 4px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong); /* ECC rule 8: controls take border-strong */
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
