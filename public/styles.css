@@ -66,7 +66,7 @@ html, body {
 
 .brand-sub {
   font-size: 17px;
-  color: var(--accent-gold);
+  color: var(--ink-muted); /* ECC: gold is identity-only and was 1.70:1 on white */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -799,3 +799,5 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     justify-content: center;
   }
 }
+/* ECC: form controls do not inherit font by default, so they rendered in Arial */
+button, input, select, textarea { font-family: inherit; }
