@@ -11,7 +11,7 @@ A clean, production-ready, mobile-first generative AI coaching application with 
 
 ### 1. Clone This Repository
 ```bash
-git clone https://github.com/robbagley-afk/gemini-coaching-agent-starter.git my-coach-app
+git clone https://github.com/robbagley-dev/gemini-coaching-agent-starter.git my-coach-app
 cd my-coach-app
 ```
 
