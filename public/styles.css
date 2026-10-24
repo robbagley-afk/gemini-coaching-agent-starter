@@ -28,6 +28,8 @@ html, body {
   color: var(--ink);
 }
 
+body { font-size: var(--text-body); } /* ECC v2: body copy inherits 20px (html stays 16px so rem sizes do not move) */
+
 .app-container {
   display: flex;
   flex-direction: column;
